@@ -93,3 +93,4 @@ if model is not None and scaler is not None:
     st.write("Positive effect → pushes prediction toward Malignant, Negative effect → pushes toward Benign")
 else:
     st.error("Model or scaler could not be loaded. Please check the file paths.")
+
