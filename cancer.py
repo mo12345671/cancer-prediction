@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 def get_clean_data():
-  data = pd.read_csv("data.csv")
+  data = pd.read_csv("cancer.csv")
   
   data = data.drop(['Unnamed: 32', 'id'], axis=1)
   
@@ -180,4 +180,5 @@ def main():
 
 if __name__ == '__main__':
     main() 
+
 
