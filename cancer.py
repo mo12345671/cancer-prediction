@@ -23,7 +23,7 @@ def load_model_and_scaler():
         scaler = pickle.load(f)
     return model, scaler
 
-model, scaler = load_model_and_scaler()
+model,scaler = load_model_and_scaler()
 
 # -----------------------------
 # Streamlit UI
@@ -49,5 +49,6 @@ st.write(f"Probability of Benign: {prob[0]*100:.2f}%")
 st.write(f"Probability of Malignant: {prob[1]*100:.2f}%")
 
 # -----------------------------
+
 
 
