@@ -13,7 +13,7 @@ st.title("🧬 Cancer Prediction using Pre-trained Model")
 # -----------------------------
 # Load Pickle Model from Device
 # -----------------------------
-model_path = "\Desktop\model (1).pkl"  # make sure this file is in the same folder as app.py
+model_path = "model (1).pkl"  # make sure this file is in the same folder as app.py
 
 if os.path.exists(model_path):
     with open(model_path, "rb") as f:
@@ -70,3 +70,4 @@ if 'model' in locals():
                 # Download results
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button("Download Predictions", data=csv, file_name="predictions.csv", mime="text/csv")
+
