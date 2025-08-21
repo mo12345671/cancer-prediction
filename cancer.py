@@ -49,3 +49,4 @@ st.write(f"Probability of Benign: {prob[0]*100:.2f}%")
 st.write(f"Probability of Malignant: {prob[1]*100:.2f}%")
 
 # -----------------------------
+
