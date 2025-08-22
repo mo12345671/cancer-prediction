@@ -1,124 +1,141 @@
 import streamlit as st
+import numpy as np
 import pandas as pd
-import joblib
 import os
+import pickle
+import joblib  # for compatibility with different save methods
 
-# Set page configuration
-st.set_page_config(
-    page_title="Breast Cancer Prediction App",
-    page_icon="🌸",
-    layout="centered",
-)
+# -----------------------------
+# Page config
+# -----------------------------
+st.set_page_config(page_title="Cancer Prediction App", layout="centered")
+st.title("🧬 Cancer Prediction using Pre-trained Best Model")
 
-# --- Define the feature names and their ranges from the dataset ---
-# These are the 30 features used for prediction.
-# The ranges are estimated based on typical values for this dataset.
-feature_details = {
-    "radius_mean": {"label": "Radius (Mean)", "min": 6.98, "max": 28.11, "default": 17.99},
-    "texture_mean": {"label": "Texture (Mean)", "min": 9.71, "max": 39.28, "default": 10.38},
-    "perimeter_mean": {"label": "Perimeter (Mean)", "min": 43.79, "max": 188.5, "default": 122.8},
-    "area_mean": {"label": "Area (Mean)", "min": 143.5, "max": 2501.0, "default": 1001.0},
-    "smoothness_mean": {"label": "Smoothness (Mean)", "min": 0.05, "max": 0.16, "default": 0.118},
-    "compactness_mean": {"label": "Compactness (Mean)", "min": 0.019, "max": 0.345, "default": 0.277},
-    "concavity_mean": {"label": "Concavity (Mean)", "min": 0.0, "max": 0.426, "default": 0.300},
-    "concave points_mean": {"label": "Concave Points (Mean)", "min": 0.0, "max": 0.201, "default": 0.147},
-    "symmetry_mean": {"label": "Symmetry (Mean)", "min": 0.106, "max": 0.304, "default": 0.241},
-    "fractal_dimension_mean": {"label": "Fractal Dimension (Mean)", "min": 0.05, "max": 0.097, "default": 0.078},
-    "radius_se": {"label": "Radius (SE)", "min": 0.11, "max": 2.87, "default": 0.95},
-    "texture_se": {"label": "Texture (SE)", "min": 0.36, "max": 4.88, "default": 0.9},
-    "perimeter_se": {"label": "Perimeter (SE)", "min": 0.76, "max": 21.98, "default": 8.58},
-    "area_se": {"label": "Area (SE)", "min": 6.8, "max": 542.2, "default": 153.4},
-    "smoothness_se": {"label": "Smoothness (SE)", "min": 0.0017, "max": 0.031, "default": 0.0064},
-    "compactness_se": {"label": "Compactness (SE)", "min": 0.002, "max": 0.135, "default": 0.046},
-    "concavity_se": {"label": "Concavity (SE)", "min": 0.0, "max": 0.396, "default": 0.04},
-    "concave points_se": {"label": "Concave Points (SE)", "min": 0.0, "max": 0.053, "default": 0.01},
-    "symmetry_se": {"label": "Symmetry (SE)", "min": 0.007, "max": 0.078, "default": 0.02},
-    "fractal_dimension_se": {"label": "Fractal Dimension (SE)", "min": 0.0009, "max": 0.03, "default": 0.004},
-    "radius_worst": {"label": "Radius (Worst)", "min": 7.93, "max": 36.04, "default": 25.38},
-    "texture_worst": {"label": "Texture (Worst)", "min": 12.02, "max": 49.54, "default": 17.33},
-    "perimeter_worst": {"label": "Perimeter (Worst)", "min": 50.41, "max": 251.2, "default": 184.6},
-    "area_worst": {"label": "Area (Worst)", "min": 185.2, "max": 4254.0, "default": 2019.0},
-    "smoothness_worst": {"label": "Smoothness (Worst)", "min": 0.07, "max": 0.223, "default": 0.162},
-    "compactness_worst": {"label": "Compactness (Worst)", "min": 0.027, "max": 1.058, "default": 0.665},
-    "concavity_worst": {"label": "Concavity (Worst)", "min": 0.0, "max": 1.252, "default": 0.711},
-    "concave points_worst": {"label": "Concave Points (Worst)", "min": 0.0, "max": 0.291, "default": 0.265},
-    "symmetry_worst": {"label": "Symmetry (Worst)", "min": 0.156, "max": 0.664, "default": 0.46},
-    "fractal_dimension_worst": {"label": "Fractal Dimension (Worst)", "min": 0.055, "max": 0.207, "default": 0.118}
+# -----------------------------
+# Safe Loader (pickle or joblib)
+# -----------------------------
+def safe_load(path):
+    """Try loading with pickle first, then joblib."""
+    try:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    except Exception:
+        try:
+            return joblib.load(path)
+        except Exception as e:
+            st.error(f"❌ Failed to load {path}: {e}")
+            return None
+
+# -----------------------------
+# Load the best model
+# -----------------------------
+model_path = "best_model.sav"
+model = safe_load(model_path) if os.path.exists(model_path) else None
+
+if model:
+    st.success("✅ Best Model loaded successfully!")
+else:
+    st.error("❌ Could not load 'best_model.sav'. Please check the file.")
+
+# -----------------------------
+# Feature Names (10 only)
+# -----------------------------
+feature_names = [
+    'mean radius', 
+    'mean texture', 
+    'mean perimeter', 
+    'mean area', 
+    'mean smoothness',
+    'radius error', 
+    'texture error', 
+    'perimeter error', 
+    'area error', 
+    'smoothness error'
+]
+
+# -----------------------------
+# Default realistic values (for user convenience)
+# -----------------------------
+defaults = {
+    'mean radius': 14.0,
+    'mean texture': 19.0,
+    'mean perimeter': 90.0,
+    'mean area': 600.0,
+    'mean smoothness': 0.1,
+    'radius error': 0.4,
+    'texture error': 1.2,
+    'perimeter error': 3.0,
+    'area error': 40.0,
+    'smoothness error': 0.01
 }
 
-# --- Function to load the model and scaler ---
-@st.cache_resource
-def load_resources():
-    """Loads the pre-trained model and scaler using joblib."""
-    try:
-        model = joblib.load('model.sav')
-        scaler = joblib.load('scaler.sav')
-        return model, scaler
-    except FileNotFoundError:
-        st.error("Error: 'model.sav' or 'scaler.sav' not found. Please ensure both files are in the same directory as this script.")
-        return None, None
+# -----------------------------
+# Prediction Section
+# -----------------------------
+if model is not None:
 
-# Load the model and scaler
-model, scaler = load_resources()
+    option = st.radio("Choose input method:", ["Manual Input", "Upload CSV"])
 
-# --- Main app structure ---
-st.title("Breast Cancer Diagnosis Prediction")
-st.markdown("This app predicts whether a tumor is **Benign (B)** or **Malignant (M)** based on its characteristics. Adjust the sliders below to see the prediction change.")
+    # ------------------ Manual Input ------------------
+    if option == "Manual Input":
+        st.subheader("🔢 Enter Features Manually")
 
-if model and scaler:
-    # Use columns to create a two-column layout for better organization
-    cols = st.columns(2)
-    user_inputs = {}
+        input_values = []
+        for feature in feature_names:
+            val = st.number_input(f"{feature}", value=defaults.get(feature, 0.0))
+            input_values.append(val)
 
-    # Create input widgets dynamically in a two-column layout
-    col_index = 0
-    for feature_name, details in feature_details.items():
-        with cols[col_index % 2]:
-            user_inputs[feature_name] = st.slider(
-                details["label"],
-                min_value=details["min"],
-                max_value=details["max"],
-                value=details["default"],
-                step=(details["max"] - details["min"]) / 100,
-                format="%.3f"
-            )
-        col_index += 1
+        input_data = np.array([input_values])
 
-    # Button to make a prediction
-    if st.button("Predict Diagnosis", type="primary"):
-        # Create a DataFrame from the user inputs
-        input_data = pd.DataFrame([user_inputs])
+        if st.button("Predict"):
+            prediction = model.predict(input_data)
+            if prediction[0] == 1:
+                st.error("⚠️ Malignant (Cancerous Tumor)")
+            else:
+                st.success("✅ Benign (Non-Cancerous Tumor)")
 
-        # Scale the input data using the loaded scaler
-        scaled_input = scaler.transform(input_data)
+            # Probability (if supported)
+            if hasattr(model, "predict_proba"):
+                prob = model.predict_proba(input_data)[0][1]
+                st.write(f"Probability of Malignancy: **{prob:.2f}**")
 
-        # Make the prediction
-        prediction = model.predict(scaled_input)
-        prediction_proba = model.predict_proba(scaled_input)
-
-        # Display the result
-        st.markdown("---")
-        st.subheader("Prediction Result:")
-        predicted_class = "Malignant" if prediction[0] == "M" else "Benign"
+    # ------------------ CSV Upload ------------------
+    elif option == "Upload CSV":
+        uploaded_csv = st.file_uploader("📂 Upload CSV with Features", type=["csv"])
         
-        # Display the final prediction with a colored box
-        if predicted_class == "Malignant":
-            st.error(f"The model predicts the tumor is **{predicted_class}**.")
-        else:
-            st.success(f"The model predicts the tumor is **{predicted_class}**.")
-
-        # Display confidence scores
-        st.write("---")
-        st.subheader("Prediction Confidence:")
-        
-        # Determine the confidence scores for each class
-        proba_df = pd.DataFrame(prediction_proba, columns=model.classes_).T.reset_index()
-        proba_df.columns = ['Diagnosis', 'Confidence']
-        proba_df['Confidence'] = proba_df['Confidence'] * 100
-        
-        st.dataframe(
-            proba_df,
-            column_order=('Diagnosis', 'Confidence'),
-            hide_index=True,
-            use_container_width=True,
+        # Template Download Button
+        st.download_button(
+            "⬇️ Download CSV Template",
+            data=pd.DataFrame(columns=feature_names).to_csv(index=False).encode("utf-8"),
+            file_name="cancer_features_template.csv",
+            mime="text/csv"
         )
+
+        if uploaded_csv is not None:
+            df = pd.read_csv(uploaded_csv)
+            st.write("📊 Uploaded Data Preview:", df.head())
+
+            # Validate Columns
+            if list(df.columns) != feature_names:
+                st.error("❌ CSV columns do not match the expected feature names.")
+            else:
+                df_values = df.values  # raw values
+
+                if st.button("Predict from CSV"):
+                    preds = model.predict(df_values)
+                    df["Prediction"] = preds
+
+                    if hasattr(model, "predict_proba"):
+                        df["Malignancy_Prob"] = model.predict_proba(df_values)[:, 1]
+
+                    st.write("✅ Predictions Done!")
+                    st.dataframe(df)
+
+                    # Download results
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        "⬇️ Download Predictions",
+                        data=csv,
+                        file_name="predictions.csv",
+                        mime="text/csv"
+                    )
